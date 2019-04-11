@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+message Error {
+  int32 id = 1;
+  string description = 2;
+}
+
+message Credentials {
+  string username = 1;
+  string token = 2;
+}
+
+message CreateCartRequest {
+  Credentials credentials = 1;
+}
+
+message CreateCartResponse {
+  bool success = 1;
+  Error error = 2;
+  int32 cart_id = 3;
+}
+
+message AddItemRequest {
+  Credentials credentials = 1;
+  int32 cart_id = 2;
+  int32 product_id = 3;
+  int32 quantity = 4;
+}
+
+message AddItemResponse {
+  bool success = 1;
+  Error error = 2;
+}
+
+message RemoveItemRequest {
+  Credentials credentials = 1;
+  int32 cart_id = 2;
+  int32 product_id = 3;
+  int32 quantity = 4;
+}
+
+message RemoveItemResponse {
+  bool success = 1;
+  Error error = 2;
+}
+
+message EmptyCartRequest {
+  Credentials credentials = 1;
+  int32 cart_id = 2;
+}
+
+message EmptyCartResponse {
+  bool success = 1;
+  Error error = 2;
+}
+
+service CartService {
+  rpc CreateCart(CreateCartRequest) returns (CreateCartResponse) {}
+  rpc AddItem(AddItemRequest) returns (AddItemResponse) {}
+  rpc RemoveItem(RemoveItemRequest) returns (RemoveItemResponse) {}
+  rpc EmptyCart(EmptyCartRequest) returns (EmptyCartResponse) {}
+  //  rpc GetItems() returns (Response) {}
+
+}
