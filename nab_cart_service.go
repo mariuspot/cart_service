@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/http"
 
 	"google.golang.org/grpc"
 
@@ -14,6 +15,7 @@ import (
 	// "github.com/golang/protobuf/proto"
 
 	"github.com/mariuspot/nab_cart_service/server"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	pb "github.com/mariuspot/nab_cart_service/pkg/api"
 )
@@ -27,11 +29,15 @@ var (
 )
 
 func main() {
+
 	flag.Parse()
 	lis, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", *port))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
+
+	http.Handle("/metrics", promhttp.Handler())
+	go http.ListenAndServe(":2112", nil)
 
 	csServer, err := server.NewCartServiceServer()
 	defer csServer.Close()

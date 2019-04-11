@@ -27,10 +27,10 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	createCartResponse, err := client.CreateCart(ctx, &pb.CreateCartRequest{})
-	log.Printf("%#v, %#v", createCartResponse, err)
+	// createCartResponse, err := client.CreateCart(ctx, &pb.CreateCartRequest{})
+	// log.Printf("%#v, %#v", createCartResponse, err)
 
-	cart_id := createCartResponse.GetCartId()
+	cart_id := int64(15) //createCartResponse.GetCartId()
 
 	addLineItemResponse, err := client.AddLineItem(ctx, &pb.AddLineItemRequest{CartId: cart_id, ProductId: 1, Quantity: 3})
 	log.Printf("%#v, %#v", addLineItemResponse, err)
@@ -41,4 +41,21 @@ func main() {
 	removeLineItemResponse, err = client.RemoveLineItem(ctx, &pb.RemoveLineItemRequest{CartId: cart_id, ProductId: 1})
 	log.Printf("%#v, %#v", removeLineItemResponse, err)
 
+	addLineItemResponse, err = client.AddLineItem(ctx, &pb.AddLineItemRequest{CartId: cart_id, ProductId: 1, Quantity: 3})
+	log.Printf("%#v, %#v", addLineItemResponse, err)
+
+	emptyCartResponse, err := client.EmptyCart(ctx, &pb.EmptyCartRequest{CartId: cart_id})
+	log.Printf("%#v, %#v", emptyCartResponse, err)
+
+	addLineItemResponse, err = client.AddLineItem(ctx, &pb.AddLineItemRequest{CartId: cart_id, ProductId: 1, Quantity: 3})
+	log.Printf("%#v, %#v", addLineItemResponse, err)
+	addLineItemResponse, err = client.AddLineItem(ctx, &pb.AddLineItemRequest{CartId: cart_id, ProductId: 2, Quantity: 2})
+	log.Printf("%#v, %#v", addLineItemResponse, err)
+
+	getLineItemsResponse, err := client.GetLineItems(ctx, &pb.GetLineItemsRequest{CartId: cart_id})
+	for _, a := range getLineItemsResponse.GetLineItem() {
+		log.Printf("%#v", a)
+		log.Printf("%#v", a.GetUpdatedAt())
+
+	}
 }
