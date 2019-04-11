@@ -1,64 +1,61 @@
 syntax = "proto3";
 
-message Error {
-  int32 id = 1;
-  string description = 2;
-}
-
-message Credentials {
-  string username = 1;
-  string token = 2;
-}
+import "google/protobuf/timestamp.proto";
 
 message CreateCartRequest {
-  Credentials credentials = 1;
 }
 
 message CreateCartResponse {
-  bool success = 1;
-  Error error = 2;
-  int32 cart_id = 3;
+  int64 cart_id = 1;
 }
 
-message AddItemRequest {
-  Credentials credentials = 1;
-  int32 cart_id = 2;
-  int32 product_id = 3;
-  int32 quantity = 4;
+message AddLineItemRequest {
+  int64 cart_id = 1;
+  int64 product_id = 2;
+  int64 quantity = 3;
 }
 
-message AddItemResponse {
-  bool success = 1;
-  Error error = 2;
+message AddLineItemResponse {
 }
 
-message RemoveItemRequest {
-  Credentials credentials = 1;
-  int32 cart_id = 2;
-  int32 product_id = 3;
-  int32 quantity = 4;
+message RemoveLineItemRequest {
+  int64 cart_id = 1;
+  int64 product_id = 2;
+  int64 quantity = 3;
 }
 
-message RemoveItemResponse {
-  bool success = 1;
-  Error error = 2;
+message RemoveLineItemResponse {
 }
 
 message EmptyCartRequest {
-  Credentials credentials = 1;
-  int32 cart_id = 2;
+  int64 cart_id = 1;
 }
 
 message EmptyCartResponse {
-  bool success = 1;
-  Error error = 2;
 }
+
+message GetLineItemsRequest {
+  int64 cart_id = 1;
+}
+
+message LineItem {
+  string title = 1;
+  string description = 2;
+  int64 quantity = 3;
+  float total_price = 4;
+  google.protobuf.Timestamp updated_at = 5;
+}
+message GetLineItemsResponse {
+  repeated LineItem line_item = 1;
+  google.protobuf.Timestamp updated_at = 2;
+}
+
 
 service CartService {
   rpc CreateCart(CreateCartRequest) returns (CreateCartResponse) {}
-  rpc AddItem(AddItemRequest) returns (AddItemResponse) {}
-  rpc RemoveItem(RemoveItemRequest) returns (RemoveItemResponse) {}
+  rpc AddLineItem(AddLineItemRequest) returns (AddLineItemResponse) {}
+  rpc RemoveLineItem(RemoveLineItemRequest) returns (RemoveLineItemResponse) {}
   rpc EmptyCart(EmptyCartRequest) returns (EmptyCartResponse) {}
-  //  rpc GetItems() returns (Response) {}
+  rpc GetLineItems(GetLineItemsRequest) returns (GetLineItemsResponse) {}
 
 }
