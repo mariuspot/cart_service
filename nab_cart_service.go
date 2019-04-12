@@ -11,15 +11,10 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/testdata"
 
-	// "google.golang.org/grpc/credentials"
-	// "google.golang.org/grpc/testdata"
-
-	// "github.com/golang/protobuf/proto"
-
-	"github.com/mariuspot/nab_cart_service/server"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	pb "github.com/mariuspot/nab_cart_service/pkg/api"
+	"github.com/mariuspot/nab_cart_service/server"
 )
 
 var (

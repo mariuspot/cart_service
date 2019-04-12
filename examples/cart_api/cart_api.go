@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/testdata"
 
-	pb "github.com/mariuspot/nab_cart_service/pkg/api"
+	cart_service "github.com/mariuspot/nab_cart_service/pkg/api"
 )
 
 var (
@@ -41,46 +41,46 @@ func main() {
 	}
 	defer conn.Close()
 
-	client := pb.NewCartServiceClient(conn)
+	client := cart_service.NewCartServiceClient(conn)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	createCartResponse, err := client.CreateCart(ctx, &pb.CreateCartRequest{})
+	createCartResponse, err := client.CreateCart(ctx, &cart_service.CreateCartRequest{})
 	log.Printf("%#v, %#v", createCartResponse, err)
 
 	cart_id := createCartResponse.GetCartId()
 
-	addLineItemResponse, err := client.AddLineItem(ctx, &pb.AddLineItemRequest{CartId: cart_id, ProductId: 1, Quantity: 3})
+	addLineItemResponse, err := client.AddLineItem(ctx, &cart_service.AddLineItemRequest{CartId: cart_id, ProductId: 1, Quantity: 3})
 	log.Printf("%#v, %#v", addLineItemResponse, err)
 
-	removeLineItemResponse, err := client.RemoveLineItem(ctx, &pb.RemoveLineItemRequest{CartId: cart_id, ProductId: 1, Quantity: 1})
+	removeLineItemResponse, err := client.RemoveLineItem(ctx, &cart_service.RemoveLineItemRequest{CartId: cart_id, ProductId: 1, Quantity: 1})
 	log.Printf("%#v, %#v", removeLineItemResponse, err)
 
-	removeLineItemResponse, err = client.RemoveLineItem(ctx, &pb.RemoveLineItemRequest{CartId: cart_id, ProductId: 1})
+	removeLineItemResponse, err = client.RemoveLineItem(ctx, &cart_service.RemoveLineItemRequest{CartId: cart_id, ProductId: 1})
 	log.Printf("%#v, %#v", removeLineItemResponse, err)
 
-	convertCartToOrderResponse, err := client.ConvertCartToOrder(ctx, &pb.ConvertCartToOrderRequest{CartId: cart_id, Name: "Name", Address: "Address", Email: "myemail@nab.com", PayType: pb.ConvertCartToOrderRequest_CARD})
+	convertCartToOrderResponse, err := client.ConvertCartToOrder(ctx, &cart_service.ConvertCartToOrderRequest{CartId: cart_id, Name: "Name", Address: "Address", Email: "myemail@nab.com", PayType: cart_service.ConvertCartToOrderRequest_CARD})
 	log.Printf("%#v, %#v", convertCartToOrderResponse, err)
 
-	addLineItemResponse, err = client.AddLineItem(ctx, &pb.AddLineItemRequest{CartId: cart_id, ProductId: 1, Quantity: 3})
+	addLineItemResponse, err = client.AddLineItem(ctx, &cart_service.AddLineItemRequest{CartId: cart_id, ProductId: 1, Quantity: 3})
 	log.Printf("%#v, %#v", addLineItemResponse, err)
 
-	emptyCartResponse, err := client.EmptyCart(ctx, &pb.EmptyCartRequest{CartId: cart_id})
+	emptyCartResponse, err := client.EmptyCart(ctx, &cart_service.EmptyCartRequest{CartId: cart_id})
 	log.Printf("%#v, %#v", emptyCartResponse, err)
 
-	addLineItemResponse, err = client.AddLineItem(ctx, &pb.AddLineItemRequest{CartId: cart_id, ProductId: 1, Quantity: 3})
+	addLineItemResponse, err = client.AddLineItem(ctx, &cart_service.AddLineItemRequest{CartId: cart_id, ProductId: 1, Quantity: 3})
 	log.Printf("%#v, %#v", addLineItemResponse, err)
-	addLineItemResponse, err = client.AddLineItem(ctx, &pb.AddLineItemRequest{CartId: cart_id, ProductId: 2, Quantity: 2})
+	addLineItemResponse, err = client.AddLineItem(ctx, &cart_service.AddLineItemRequest{CartId: cart_id, ProductId: 2, Quantity: 2})
 	log.Printf("%#v, %#v", addLineItemResponse, err)
 
-	getLineItemsResponse, err := client.GetLineItems(ctx, &pb.GetLineItemsRequest{CartId: cart_id})
+	getLineItemsResponse, err := client.GetLineItems(ctx, &cart_service.GetLineItemsRequest{CartId: cart_id})
 	for _, a := range getLineItemsResponse.GetLineItem() {
 		log.Printf("%#v", a)
 		log.Printf("%#v", a.GetUpdatedAt())
 	}
 
-	convertCartToOrderResponse, err = client.ConvertCartToOrder(ctx, &pb.ConvertCartToOrderRequest{CartId: cart_id, Name: "Name", Address: "Address", Email: "myemail@nab.com", PayType: pb.ConvertCartToOrderRequest_CARD})
+	convertCartToOrderResponse, err = client.ConvertCartToOrder(ctx, &cart_service.ConvertCartToOrderRequest{CartId: cart_id, Name: "Name", Address: "Address", Email: "myemail@nab.com", PayType: cart_service.ConvertCartToOrderRequest_CARD})
 	log.Printf("%#v, %#v", convertCartToOrderResponse, err)
 
 }
