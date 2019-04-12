@@ -210,8 +210,7 @@ func (dc *DatabaseConnection) ConvertCartToOrder(cart_id int64, name, address, e
 		tx.Rollback()
 		return 0, errors.New("Cart is empty")
 	}
-	rows_affected, err := result.RowsAffected()
-	log.Println("Rows affected", rows_affected)
+
 	result, err = dc.ExecTx(tx, "DELETE FROM carts WHERE id = ?", cart_id)
 	if err != nil {
 		tx.Rollback()
