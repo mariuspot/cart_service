@@ -53,6 +53,7 @@ func (cs *cartServiceServer) CreateCart(ctx context.Context, req *pb.CreateCartR
 	defer requestSummary.Observe(time.Since(start).Seconds())
 
 	log.Println("CreateCart")
+
 	id, err := cs.dc.CreateCart()
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("Error creating cart (err: %s)", err.Error()))
@@ -67,6 +68,7 @@ func (cs *cartServiceServer) AddLineItem(ctx context.Context, req *pb.AddLineIte
 	defer requestSummary.Observe(time.Since(start).Seconds())
 
 	log.Printf("AddLineItem cart_id:%d prod_id:%d quantity:%d", req.GetCartId(), req.GetProductId(), req.GetQuantity())
+
 	err := cs.dc.AddLineItem(req.GetCartId(), req.GetProductId(), req.GetQuantity())
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("Error adding line item to cart (err: %s)", err.Error()))
@@ -80,6 +82,7 @@ func (cs *cartServiceServer) RemoveLineItem(ctx context.Context, req *pb.RemoveL
 	defer requestSummary.Observe(time.Since(start).Seconds())
 
 	log.Printf("RemoveLineItem cart_id:%d prod_id:%d quantity:%d", req.GetCartId(), req.GetProductId(), req.GetQuantity())
+
 	err := cs.dc.RemoveLineItem(req.GetCartId(), req.GetProductId(), req.GetQuantity())
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("Error removing line item from cart (err: %s)", err.Error()))
@@ -93,6 +96,7 @@ func (cs *cartServiceServer) EmptyCart(ctx context.Context, req *pb.EmptyCartReq
 	defer requestSummary.Observe(time.Since(start).Seconds())
 
 	log.Printf("EmptyCart cart_id:%d", req.GetCartId())
+
 	err := cs.dc.EmptyCart(req.GetCartId())
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("Error emptying cart (err: %s)", err.Error()))
@@ -105,16 +109,16 @@ func (cs *cartServiceServer) GetLineItems(ctx context.Context, req *pb.GetLineIt
 	requestsReceived.Inc()
 	defer requestSummary.Observe(time.Since(start).Seconds())
 
-	log.Println("GetLineItems")
+	log.Println("GetLineItems cart_id: %d", req.GetCartId())
+
 	lineItems, err := cs.dc.GetLineItems(req.GetCartId())
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("Error getting line items for cart (err: %s)", err.Error()))
 	}
-	response := &pb.GetLineItemsResponse{}
 
+	response := &pb.GetLineItemsResponse{}
 	for _, li := range lineItems {
 		response.LineItem = append(response.LineItem, &pb.LineItem{Title: li.Title, Description: li.Description, ImageUrl: li.Image_url.String, Quantity: li.Quantity, Price: li.Price, UpdatedAt: &timestamp.Timestamp{Seconds: li.Updated_at.Unix()}})
-		log.Printf("title:%s description:%s image_url:%s quantity:%d price:%f updated:%s", li.Title, li.Description, li.Image_url.String, li.Quantity, li.Price, li.Updated_at)
 	}
 	return response, nil
 }
@@ -124,7 +128,8 @@ func (cs *cartServiceServer) ConvertCartToOrder(ctx context.Context, req *pb.Con
 	requestsReceived.Inc()
 	defer requestSummary.Observe(time.Since(start).Seconds())
 
-	log.Println("GetLineItems")
+	log.Printf("ConvertCartToOrder, cart_id: %d name: %s address: %s email: %s pay_type: %s", req.GetCartId(), req.GetName(), req.GetAddress(), req.GetEmail(), req.GetPayType().String())
+
 	order_id, err := cs.dc.ConvertCartToOrder(req.GetCartId(), req.GetName(), req.GetAddress(), req.GetEmail(), int32(req.GetPayType()))
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("Error converting cart to order (err: %s)", err.Error()))
