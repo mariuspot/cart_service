@@ -14,12 +14,12 @@ import (
 
 var (
 	queryCounter = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "cart_service_query_counter",
-		Help: "The total number of queries",
+		Name: "cart_service_database_query_counter",
+		Help: "The total number of database queries",
 	})
 	querySummary = promauto.NewSummary(prometheus.SummaryOpts{
-		Name: "cart_service_query_time_summary",
-		Help: "The query times summary",
+		Name: "cart_service_database_query_time_summary",
+		Help: "The database query times summary",
 	})
 )
 
