@@ -60,13 +60,16 @@ func main() {
 	grpcServer := grpc.NewServer(opts...)
 
 	http.Handle("/metrics", promhttp.Handler())
+	log.Printf("Starting metrics listener on %s:%d", *metrics_ip, *metrics_port)
 	go http.ListenAndServe(fmt.Sprintf("%s:%d", *metrics_ip, *metrics_port), nil)
 
 	csServer, err := server.NewCartServiceServer(*db_username, *db_password, *db_ip, *db_port, *db_name)
+	if err != nil {
+		log.Fatalf("Failed to create the cart service server (err: %s)", err.Error())
+	}
 	defer csServer.Close()
 
 	pb.RegisterCartServiceServer(grpcServer, csServer)
-	// ... // determine whether to use TLS
 	log.Printf("Starting server listening on %s:%d", *ip, *port)
 	grpcServer.Serve(lis)
 }
