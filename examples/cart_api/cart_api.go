@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log"
 	"time"
 
@@ -22,6 +23,7 @@ var (
 
 func main() {
 	flag.Parse()
+	//Connect to cart service
 	var opts []grpc.DialOption
 	if *tls {
 		if *caFile == "" {
@@ -41,46 +43,94 @@ func main() {
 	}
 	defer conn.Close()
 
+	//Client for communicating with cart service
 	client := cart_service.NewCartServiceClient(conn)
 
+	//Context
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	//Create a new cart
 	createCartResponse, err := client.CreateCart(ctx, &cart_service.CreateCartRequest{})
-	log.Printf("%#v, %#v", createCartResponse, err)
-
-	cart_id := createCartResponse.GetCartId()
-
-	addLineItemResponse, err := client.AddLineItem(ctx, &cart_service.AddLineItemRequest{CartId: cart_id, ProductId: 1, Quantity: 3})
-	log.Printf("%#v, %#v", addLineItemResponse, err)
-
-	removeLineItemResponse, err := client.RemoveLineItem(ctx, &cart_service.RemoveLineItemRequest{CartId: cart_id, ProductId: 1, Quantity: 1})
-	log.Printf("%#v, %#v", removeLineItemResponse, err)
-
-	removeLineItemResponse, err = client.RemoveLineItem(ctx, &cart_service.RemoveLineItemRequest{CartId: cart_id, ProductId: 1})
-	log.Printf("%#v, %#v", removeLineItemResponse, err)
-
-	convertCartToOrderResponse, err := client.ConvertCartToOrder(ctx, &cart_service.ConvertCartToOrderRequest{CartId: cart_id, Name: "Name", Address: "Address", Email: "myemail@nab.com", PayType: cart_service.ConvertCartToOrderRequest_CARD})
-	log.Printf("%#v, %#v", convertCartToOrderResponse, err)
-
-	addLineItemResponse, err = client.AddLineItem(ctx, &cart_service.AddLineItemRequest{CartId: cart_id, ProductId: 1, Quantity: 3})
-	log.Printf("%#v, %#v", addLineItemResponse, err)
-
-	emptyCartResponse, err := client.EmptyCart(ctx, &cart_service.EmptyCartRequest{CartId: cart_id})
-	log.Printf("%#v, %#v", emptyCartResponse, err)
-
-	addLineItemResponse, err = client.AddLineItem(ctx, &cart_service.AddLineItemRequest{CartId: cart_id, ProductId: 1, Quantity: 3})
-	log.Printf("%#v, %#v", addLineItemResponse, err)
-	addLineItemResponse, err = client.AddLineItem(ctx, &cart_service.AddLineItemRequest{CartId: cart_id, ProductId: 2, Quantity: 2})
-	log.Printf("%#v, %#v", addLineItemResponse, err)
-
-	getLineItemsResponse, err := client.GetLineItems(ctx, &cart_service.GetLineItemsRequest{CartId: cart_id})
-	for _, a := range getLineItemsResponse.GetLineItem() {
-		log.Printf("%#v", a)
-		log.Printf("%#v", a.GetUpdatedAt())
+	if err != nil {
+		log.Fatalf("Failed to create cart (err: %s)", err.Error())
 	}
 
+	cart_id := createCartResponse.GetCartId()
+	log.Printf("Cart created, cart_id:%d", cart_id)
+
+	//Add a item to the cart
+	_ /*addLineItemResponse*/, err = client.AddLineItem(ctx, &cart_service.AddLineItemRequest{CartId: cart_id, ProductId: 1, Quantity: 3})
+	if err != nil {
+		log.Fatalf("Failed to add item to cart (err: %s)", err.Error())
+	}
+	log.Println("Items added to cart (3 of product 1)")
+
+	//Remove a single item (quantity 1) product from cart
+	_ /*removeLineItemResponse*/, err = client.RemoveLineItem(ctx, &cart_service.RemoveLineItemRequest{CartId: cart_id, ProductId: 1, Quantity: 1})
+	if err != nil {
+		log.Fatalf("Failed to remove item from cart (err: %s)", err.Error())
+	}
+	log.Println("Item removed from cart (1 of product 1)")
+
+	//Remove all of a specific product from cart
+	_ /*removeLineItemResponse*/, err = client.RemoveLineItem(ctx, &cart_service.RemoveLineItemRequest{CartId: cart_id, ProductId: 1})
+	if err != nil {
+		log.Fatalf("Failed to remove item from cart (err: %s)", err.Error())
+	}
+	log.Println("Item all of product from cart (all of product 1)")
+
+	//Convert cart to order (Empty cart should return an error)
+	convertCartToOrderResponse, err := client.ConvertCartToOrder(ctx, &cart_service.ConvertCartToOrderRequest{CartId: cart_id, Name: "Name", Address: "Address", Email: "myemail@nab.com", PayType: cart_service.ConvertCartToOrderRequest_CARD})
+	if err == nil {
+		log.Fatalln("Something went wrong, expected and error and didn't receive one")
+	}
+	log.Printf("Expected, error converting cart to order (err: %s)", err.Error())
+
+	//Add 3 items of product 1 to cart
+	_ /*addLineItemResponse*/, err = client.AddLineItem(ctx, &cart_service.AddLineItemRequest{CartId: cart_id, ProductId: 1, Quantity: 3})
+	if err != nil {
+		log.Fatalf("Failed to add item to cart (err: %s)", err.Error())
+	}
+	log.Println("Items added to cart (3 of product 1)")
+
+	//Empty cart (remove everything)
+	_ /*emptyCartResponse*/, err = client.EmptyCart(ctx, &cart_service.EmptyCartRequest{CartId: cart_id})
+	if err != nil {
+		log.Fatalf("Failed to empty cart (err: %s)", err.Error())
+	}
+	log.Println("Emptied cart (removed everything)")
+
+	//Add 3 items of product 1 to cart
+	_ /*addLineItemResponse*/, err = client.AddLineItem(ctx, &cart_service.AddLineItemRequest{CartId: cart_id, ProductId: 1, Quantity: 3})
+	if err != nil {
+		log.Fatalf("Failed to add item to cart (err: %s)", err.Error())
+	}
+	log.Println("Items added to cart (3 of product 1)")
+
+	//Add 2 items of product 2 to cart
+	_ /*addLineItemResponse*/, err = client.AddLineItem(ctx, &cart_service.AddLineItemRequest{CartId: cart_id, ProductId: 2, Quantity: 2})
+	if err != nil {
+		log.Fatalf("Failed to add item to cart (err: %s)", err.Error())
+	}
+	log.Println("Items added to cart (2 of product 2)")
+
+	//Get items in cart
+	getLineItemsResponse, err := client.GetLineItems(ctx, &cart_service.GetLineItemsRequest{CartId: cart_id})
+	if err != nil {
+		log.Fatalf("Failed to get items in cart (err: %s)", err.Error())
+	}
+	for i, item := range getLineItemsResponse.GetLineItem() {
+		fmt.Printf("Item %d", i+1)
+		log.Printf("\tTitle: %s\n\tDescription: %s\n\tImageUrl: %s\n\tQuantity: %d\n\tPrice: %0.2f", item.GetTitle(), item.GetDescription(), item.GetImageUrl(), item.GetQuantity(), item.GetPrice())
+
+	}
+
+	//Convert cart to order
 	convertCartToOrderResponse, err = client.ConvertCartToOrder(ctx, &cart_service.ConvertCartToOrderRequest{CartId: cart_id, Name: "Name", Address: "Address", Email: "myemail@nab.com", PayType: cart_service.ConvertCartToOrderRequest_CARD})
-	log.Printf("%#v, %#v", convertCartToOrderResponse, err)
+	if err != nil {
+		log.Fatalf("Failed to convert cart to order (err: %s)", err.Error())
+	}
+	log.Printf("Cart converted to order, order_id: %d", convertCartToOrderResponse.GetOrderId())
 
 }
