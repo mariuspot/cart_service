@@ -22,16 +22,23 @@ import (
 
 var (
 	// tls        = flag.Bool("tls", false, "Connection uses TLS if true, else plain TCP")
-	// certFile   = flag.String("cert_file", "", "The TLS cert file")
-	// keyFile    = flag.String("key_file", "", "The TLS key file")
-	// jsonDBFile = flag.String("json_db_file", "", "A json file containing a list of features")
-	port = flag.Int("port", 10000, "The server port")
+	certFile = flag.String("cert_file", "", "The TLS cert file")
+	keyFile  = flag.String("key_file", "", "The TLS key file")
+
+	db_username = flag.String("db_username", "username", "Database username")
+	db_password = flag.String("db_password", "password", "Database password")
+	db_name     = flag.String("db_name", "narnes_and_boble", "Database name")
+	db_ip       = flag.String("db_ip", "127.0.0.1", "Database ip")
+	db_port     = flag.Int("db_port", 3306, "Database port")
+
+	ip   = flag.String("ip", "127.0.0.1", "The ip to listen on for the server")
+	port = flag.Int("port", 10000, "The port to listen on for the server")
 )
 
 func main() {
 
 	flag.Parse()
-	lis, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", *port))
+	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", *ip, *port))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
@@ -39,7 +46,7 @@ func main() {
 	http.Handle("/metrics", promhttp.Handler())
 	go http.ListenAndServe(":2112", nil)
 
-	csServer, err := server.NewCartServiceServer()
+	csServer, err := server.NewCartServiceServer(*db_username, *db_password, *db_ip, *db_port, *db_name)
 	defer csServer.Close()
 
 	grpcServer := grpc.NewServer()

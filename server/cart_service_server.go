@@ -32,8 +32,8 @@ type cartServiceServer struct {
 	dc *data.DatabaseConnection
 }
 
-func NewCartServiceServer() (*cartServiceServer, error) {
-	dc, err := data.NewDatabaseConnection("username", "password", "localhost:3306", "narnes_and_boble")
+func NewCartServiceServer(db_username, db_password, db_ip string, dp_port int, db_name string) (*cartServiceServer, error) {
+	dc, err := data.NewDatabaseConnection(db_username, db_password, db_ip, dp_port, db_name)
 	if err != nil {
 		return nil, err
 	}

@@ -26,9 +26,9 @@ type DatabaseConnection struct {
 	db *sql.DB
 }
 
-func NewDatabaseConnection(username, password, serverAddress, database string) (*DatabaseConnection, error) {
+func NewDatabaseConnection(username, password, ip string, port int, name string) (*DatabaseConnection, error) {
 	queryCounter.Inc()
-	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s)/%s?parseTime=true", username, password, serverAddress, database))
+	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=true", username, password, ip, port, name))
 
 	// if there is an error opening the connection, handle it
 	if err != nil {
