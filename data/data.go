@@ -2,6 +2,7 @@ package data
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -38,6 +39,27 @@ func NewDatabaseConnection(username, password, ip string, port int, name string)
 	return &DatabaseConnection{db: db}, nil
 }
 
+func (dc *DatabaseConnection) Query(query string, args ...interface{}) (*sql.Rows, error) {
+	queryCounter.Inc()
+	start := time.Now()
+	defer querySummary.Observe(time.Since(start).Seconds())
+	return dc.db.Query(query, args...)
+}
+
+func (dc *DatabaseConnection) Exec(query string, args ...interface{}) (sql.Result, error) {
+	queryCounter.Inc()
+	start := time.Now()
+	defer querySummary.Observe(time.Since(start).Seconds())
+	return dc.db.Exec(query, args...)
+}
+
+func (dc *DatabaseConnection) ExecTx(tx *sql.Tx, query string, args ...interface{}) (sql.Result, error) {
+	queryCounter.Inc()
+	start := time.Now()
+	defer querySummary.Observe(time.Since(start).Seconds())
+	return tx.Exec(query, args...)
+}
+
 func (dc *DatabaseConnection) Close() {
 	if dc.db != nil {
 		dc.db.Close()
@@ -65,13 +87,11 @@ func (dc *DatabaseConnection) CreateCart() (int64, error) {
 // order_id
 
 func (dc *DatabaseConnection) AddLineItem(cart_id, product_id, quantity int64) error {
-	queryCounter.Inc()
-	start := time.Now()
-	rows, err := dc.db.Query("SELECT price FROM products WHERE id = ?", product_id)
+	rows, err := dc.Query("SELECT price FROM products WHERE id = ?", product_id)
 	if err != nil {
 		return err
 	}
-	querySummary.Observe(time.Since(start).Seconds())
+
 	if !rows.Next() {
 		return fmt.Errorf("Product not found")
 	}
@@ -84,36 +104,27 @@ func (dc *DatabaseConnection) AddLineItem(cart_id, product_id, quantity int64) e
 	if err != nil {
 		return err
 	}
-	queryCounter.Inc()
-	start = time.Now()
-	_, err = tx.Exec("INSERT INTO line_items(product_id, cart_id, created_at, updated_at, quantity, price) VALUES(?, ?, NOW(), NOW(), ?, ?)", product_id, cart_id, quantity, product_price*float64(quantity))
+	_, err = dc.ExecTx(tx, "INSERT INTO line_items(product_id, cart_id, created_at, updated_at, quantity, price) VALUES(?, ?, NOW(), NOW(), ?, ?)", product_id, cart_id, quantity, product_price*float64(quantity))
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
-	querySummary.Observe(time.Since(start).Seconds())
 
-	queryCounter.Inc()
-	start = time.Now()
-	_, err = tx.Exec("UPDATE carts SET updated_at = NOW() WHERE id = ?", cart_id)
+	_, err = dc.ExecTx(tx, "UPDATE carts SET updated_at = NOW() WHERE id = ?", cart_id)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
-	querySummary.Observe(time.Since(start).Seconds())
 
 	return tx.Commit()
 }
 
 func (dc *DatabaseConnection) RemoveLineItem(cart_id, product_id, quantity int64) error {
 
-	queryCounter.Inc()
-	start := time.Now()
-	rows, err := dc.db.Query("SELECT id, quantity FROM line_items WHERE cart_id = ? AND product_id = ?", cart_id, product_id)
+	rows, err := dc.Query("SELECT id, quantity FROM line_items WHERE cart_id = ? AND product_id = ?", cart_id, product_id)
 	if err != nil {
 		return err
 	}
-	querySummary.Observe(time.Since(start).Seconds())
 
 	if !rows.Next() {
 		return fmt.Errorf("Product not found")
@@ -123,33 +134,24 @@ func (dc *DatabaseConnection) RemoveLineItem(cart_id, product_id, quantity int64
 	rows.Scan(&line_item_id, &line_item_quantity)
 
 	if quantity > line_item_quantity || quantity == 0 {
-		queryCounter.Inc()
-		start = time.Now()
-		_, err := dc.db.Exec("DELETE FROM line_items WHERE id = ?", line_item_id)
+		_, err := dc.Exec("DELETE FROM line_items WHERE id = ?", line_item_id)
 		if err != nil {
 			return err
 		}
-		querySummary.Observe(time.Since(start).Seconds())
 	} else {
-		queryCounter.Inc()
-		start = time.Now()
-		_, err := dc.db.Exec("UPDATE line_items SET quantity = ? WHERE id = ?", line_item_quantity-quantity, line_item_id)
+		_, err := dc.Exec("UPDATE line_items SET quantity = ? WHERE id = ?", line_item_quantity-quantity, line_item_id)
 		if err != nil {
 			return err
 		}
-		querySummary.Observe(time.Since(start).Seconds())
 	}
 	return nil
 }
 
 func (dc *DatabaseConnection) EmptyCart(cart_id int64) error {
-	queryCounter.Inc()
-	start := time.Now()
-	_, err := dc.db.Exec("DELETE FROM line_items WHERE cart_id = ?", cart_id)
+	_, err := dc.Exec("DELETE FROM line_items WHERE cart_id = ?", cart_id)
 	if err != nil {
 		return err
 	}
-	querySummary.Observe(time.Since(start).Seconds())
 	return nil
 }
 
@@ -163,13 +165,10 @@ type LineItem struct {
 }
 
 func (dc *DatabaseConnection) GetLineItems(cart_id int64) ([]LineItem, error) {
-	queryCounter.Inc()
-	start := time.Now()
-	rows, err := dc.db.Query("SELECT p.title, p.description, p.image_url, li.quantity, p.price, li.updated_at FROM line_items li INNER JOIN products p ON li.product_id = p.id WHERE li.cart_id = ?", cart_id)
+	rows, err := dc.Query("SELECT p.title, p.description, p.image_url, li.quantity, p.price, li.updated_at FROM line_items li INNER JOIN products p ON li.product_id = p.id WHERE li.cart_id = ?", cart_id)
 	if err != nil {
 		return nil, err
 	}
-	querySummary.Observe(time.Since(start).Seconds())
 
 	lineItems := make([]LineItem, 0)
 	var title, description string
@@ -185,4 +184,48 @@ func (dc *DatabaseConnection) GetLineItems(cart_id int64) ([]LineItem, error) {
 		lineItems = append(lineItems, LineItem{Title: title, Description: description, Image_url: image_url, Quantity: quantity, Price: price, Updated_at: updated_at})
 	}
 	return lineItems, nil
+}
+
+func (dc *DatabaseConnection) ConvertCartToOrder(cart_id int64, name, address, email string, pay_type int32) (int64, error) {
+	tx, err := dc.db.Begin()
+	if err != nil {
+		return 0, err
+	}
+	result, err := dc.ExecTx(tx, "INSERT INTO orders(name, address, email, pay_type, created_at, updated_at) VALUES(?, ?, ?, ?, NOW(), NOW())", name, address, email, pay_type)
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+	order_id, _ := result.LastInsertId()
+
+	result, err = dc.ExecTx(tx, "UPDATE line_items SET order_id = ?, updated_at = NOW(), cart_id = NULL WHERE cart_id = ?", order_id, cart_id)
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+	if rows_affected, err := result.RowsAffected(); err != nil {
+		tx.Rollback()
+		return 0, err
+	} else if rows_affected == 0 {
+		tx.Rollback()
+		return 0, errors.New("Cart is empty")
+	}
+	rows_affected, err := result.RowsAffected()
+	log.Println("Rows affected", rows_affected)
+	result, err = dc.ExecTx(tx, "DELETE FROM carts WHERE id = ?", cart_id)
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+	if rows_affected, err := result.RowsAffected(); err != nil {
+		tx.Rollback()
+		return 0, err
+	} else if rows_affected == 0 {
+		tx.Rollback()
+		return 0, errors.New("Cart doesnt exist")
+	}
+
+	tx.Commit()
+	return order_id, nil
+
 }

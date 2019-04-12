@@ -118,3 +118,16 @@ func (cs *cartServiceServer) GetLineItems(ctx context.Context, req *pb.GetLineIt
 	}
 	return response, nil
 }
+
+func (cs *cartServiceServer) ConvertCartToOrder(ctx context.Context, req *pb.ConvertCartToOrderRequest) (*pb.ConvertCartToOrderResponse, error) {
+	start := time.Now()
+	requestsReceived.Inc()
+	defer requestSummary.Observe(time.Since(start).Seconds())
+
+	log.Println("GetLineItems")
+	order_id, err := cs.dc.ConvertCartToOrder(req.GetCartId(), req.GetName(), req.GetAddress(), req.GetEmail(), int32(req.GetPayType()))
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("Error converting cart to order (err: %s)", err.Error()))
+	}
+	return &pb.ConvertCartToOrderResponse{OrderId: order_id}, nil
+}

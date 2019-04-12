@@ -46,10 +46,10 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// createCartResponse, err := client.CreateCart(ctx, &pb.CreateCartRequest{})
-	// log.Printf("%#v, %#v", createCartResponse, err)
+	createCartResponse, err := client.CreateCart(ctx, &pb.CreateCartRequest{})
+	log.Printf("%#v, %#v", createCartResponse, err)
 
-	cart_id := int64(15) //createCartResponse.GetCartId()
+	cart_id := createCartResponse.GetCartId()
 
 	addLineItemResponse, err := client.AddLineItem(ctx, &pb.AddLineItemRequest{CartId: cart_id, ProductId: 1, Quantity: 3})
 	log.Printf("%#v, %#v", addLineItemResponse, err)
@@ -59,6 +59,9 @@ func main() {
 
 	removeLineItemResponse, err = client.RemoveLineItem(ctx, &pb.RemoveLineItemRequest{CartId: cart_id, ProductId: 1})
 	log.Printf("%#v, %#v", removeLineItemResponse, err)
+
+	convertCartToOrderResponse, err := client.ConvertCartToOrder(ctx, &pb.ConvertCartToOrderRequest{CartId: cart_id, Name: "Name", Address: "Address", Email: "myemail@nab.com", PayType: pb.ConvertCartToOrderRequest_CARD})
+	log.Printf("%#v, %#v", convertCartToOrderResponse, err)
 
 	addLineItemResponse, err = client.AddLineItem(ctx, &pb.AddLineItemRequest{CartId: cart_id, ProductId: 1, Quantity: 3})
 	log.Printf("%#v, %#v", addLineItemResponse, err)
@@ -75,6 +78,9 @@ func main() {
 	for _, a := range getLineItemsResponse.GetLineItem() {
 		log.Printf("%#v", a)
 		log.Printf("%#v", a.GetUpdatedAt())
-
 	}
+
+	convertCartToOrderResponse, err = client.ConvertCartToOrder(ctx, &pb.ConvertCartToOrderRequest{CartId: cart_id, Name: "Name", Address: "Address", Email: "myemail@nab.com", PayType: pb.ConvertCartToOrderRequest_CARD})
+	log.Printf("%#v, %#v", convertCartToOrderResponse, err)
+
 }
